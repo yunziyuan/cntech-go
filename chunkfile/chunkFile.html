@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>分片文件上传</title>
+    <h3>分片文件上传</h3>
+    <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+</head>
+<body>
+<input type="file" name="file" id="file">
+<button id="upload" onClick="upload()">上传</button>
+<script type="text/javascript">
+    // 每个文件切片大小定为10M
+    var chunksize = 1024 * 1024 * 50;
+    // 定义上传总切片数
+    var chunktotal;
+    // 设置上传成功数量记录
+    successTotal = 0
+    function upload() {
+        var file = document.getElementById("file").files[0];
+        var start = 0;
+        var end;
+        var index = 0;
+        var filesize = file.size;
+        var filename = file.name;
+
+        // 计算总的切片数
+        chunktotal = Math.ceil(filesize / chunksize);
+        while(start < filesize) {
+            end = start + chunksize;
+            if(end > filesize) {
+                end = filesize;
+            }
+
+            var chunk = file.slice(start,end);//切割文件
+            var chunkindex = index;
+            var formData = new FormData();
+            // 新增切片文件
+            formData.append("file", chunk, filename);
+            // 切片索引
+            formData.append("chunkindex", chunkindex);
+            // 切片总数
+            formData.append("chunktotal", chunktotal);
+            // 文件总大小
+            formData.append("filesize",filesize)
+            // 使用ajax提交
+            $.ajax({
+                url: 'http://127.0.0.1:8001/chunkfile',
+                type: 'POST',
+                cache: false,
+                data: formData,
+                processData: false,
+                contentType: false,
+                success:function (res){
+                    successTotal = successTotal + 1
+                }
+            }).done(function(res){
+                console.log(res)
+            }).fail(function(res) {
+                console.log(res)
+            });
+            start = end;
+            index++;
+        }
+        console.log("上传数：",successTotal)
+        // if (chunktotal == successTotal) {
+        //     alert("上传成功")
+        // } else {
+        //     alert("上传失败")
+        // }
+    }
+</script>
+</body>
+</html>
